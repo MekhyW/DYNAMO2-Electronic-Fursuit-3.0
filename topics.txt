@@ -1,0 +1,84 @@
+Master only launches and monitors nodes, all low-abstraction IO and high-abstraction control is done in nodes.
+
+vision.py:
+- camera status ('dynamo/camera/status')
+- frame capture ('dynamo/camera/raw') and saving in rolling buffer
+- bounding box identification and depth map and/or SAM ('dynamo/camera/detection' and 'dynamo/camera/processed' topics)
+- video stitching service with upload to telegram, with exte mic audio buffer (sub 'dynamo/camera/saveclip', pub feedback)
+- environment lighting estimation algo ('dynamo/camera/lighting')
+
+microphone.py:
+- mic status ('dynamo/microphone/internal/status' and 'dynamo/microphone/external/status')
+- audio capture ('dynamo/microphone/internal/raw' and 'dynamo/microphone/external/raw') and saving in rolling buffers
+- noise level FFT algo ('dynamo/microphone/internal/fft' and 'dynamo/microphone/external/fft')
+- audio event detection algo ('dynamo/microphone/internal/aed' and 'dynamo/microphone/external/aed')
+- internal speech-to-text ('dynamo/microphone/internal/stt')
+- internal speech emotion recognition ('dynamo/microphone/internal/ser')
+- external music and beat detection algo ('dynamo/microphone/external/music-detect' and 'dynamo/microphone/external/beat-detect')
+
+mqttbridge.py:
+- routes cloud mqtt commands to zeromq for local nodes, preserving names and params
+
+handheld.py:
+- handheld commands ('dynamo/handheld/command')
+
+unity.py:
+- connection status ('dynamo/unity/status')
+- set expression scores (sub 'dynamo/expression' and 'dynamo/commands/face-expression-tracking-toggle')
+- set eyelids (sub 'dynamo/eyes/eyelid' and 'dynamo/commands/eye-tracking-toggle')
+- set eye position (sub 'dynamo/eyes/position' and 'dynamo/commands/eye-tracking-toggle')
+- set goggles animation (sub 'dynamo/goggles')
+- play video (sub 'dynamo/eyes-video')
+- play minigame (sub 'dynamo/eyes-minigame')
+
+leds.py:
+- controller connection status ('dynamo/leds/status')
+- toggle lights on/off (sub 'dynamo/commands/leds-toggle')
+- set lights brightness (sub 'dynamo/commands/leds-brightness')
+- set lights palette (sub 'dynamo/commands/leds-color', autopick secondary colors from this main color)
+- set segment effect, including waveform and beat if appropriate (sub 'dynamo/commands/leds-effect', 'dynamo/microphone/internal/fft', 'dynamo/microphone/external/fft', 'dynamo/microphone/external/music-detect' and 'dynamo/microphone/external/beat-detect')
+- play light sequence once (sub 'dynamo/commands/leds-animation')
+
+actuators.py:
+- board connection status ('dynamo/actuators/status')
+- move ear l/r (sub 'dynamo/actuators/move-ear')
+- move eyebrow l/r (sub 'dynamo/actuators/move-eyebrow')
+- macro presets (sub 'dynamo/expression')
+
+audio_sfx.py:
+- fetch list of meme sfx ('dynamo/data/sound_effects')
+- play sfx (sub 'dynamo/commands/play-sound-effect'; can be meme, system, passive or soliloquy)
+- play tts (sub 'dynamo/commands/text-to-speech', elevenlabs)
+
+audio_bgm.py:
+- 
+
+voicemod.py:
+- fetch list of voice effects ('dynamo/data/voice_effects')
+- set voice effect (sub 'dynamo/commands/set-voice-effect')
+- toggle vc on/off (sub 'dynamo/commands/voice-changer-toggle')
+- toggle mute/unmute (sub 'dynamo/commands/microphone-toggle')
+
+windows.py:
+- system status ('dynamo/status/system')
+- set global volume (sub 'dynamo/commands/set-output-volume')
+- shutdown (sub 'dynamo/commands/shutdown')
+- reboot (sub 'dynamo/commands/reboot')
+- kill software (sub 'dynamo/commands/kill-software')
+
+telegram.py:
+- bot status ('dynamo/status/telegram')
+- bot defaults, same as dynamo-1
+- send message (sub 'dynamo/commands/telegram/send-text')
+- send media (sub 'dynamo/commands/telegram/send-media')
+
+control_state.py:
+- sub to all local input topics
+- state of external environment ('dynamo/understanding/world')
+- state of internal suit ('dynamo/understanding/suit')
+
+control_director.py:
+- sub to 'dynamo/understanding/world', 'dynamo/understanding/suit' and 'dynamo/commands/set-expression'
+- expression scores ('dynamo/expression')
+- pub to commands topics according to expression and states
+- pub to commands topics when manual macros hit, with high priority (sub to 'dynamo/handheld/command', set timers to switch manual modes back to auto afterwards)
