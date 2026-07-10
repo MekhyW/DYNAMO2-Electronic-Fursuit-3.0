@@ -24,7 +24,6 @@ class TestZeroMQ(unittest.TestCase):
         rep_socket = self.create_socket(zmq.REP)
         req_socket = self.create_socket(zmq.REQ)
         rep_socket.rcvtimeo = 1000 # avoid hanging on failure
-        req_socket.rcvtimeo = 1000
         addr = "inproc://req-rep-threaded"
         rep_socket.bind(addr)
         req_socket.connect(addr)

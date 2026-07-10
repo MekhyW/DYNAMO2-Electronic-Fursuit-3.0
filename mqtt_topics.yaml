@@ -1,0 +1,397 @@
+common_payloads:
+  TelegramUser:
+    type: object
+    description: Context of the authenticated user performing the action.
+    properties:
+      id:
+        type: integer
+        description: Telegram User ID (0 if unauthenticated)
+      first_name:
+        type: string
+        description: First name of the Telegram user ("Unauthenticated" if unauthenticated)
+
+topics:
+  # Topics used for command execution
+  commands:
+    - topic: dynamo/commands/play-sound-effect
+      description: Plays a predefined sound effect on the device.
+      payload:
+        effectId:
+          type: [integer, string]
+          description: Unique identifier of the sound effect to be played.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/set-voice-effect
+      description: Sets the active voice effect ID on the device.
+      payload:
+        effectId:
+          type: integer
+          description: Unique identifier of the voice effect.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/set-output-volume
+      description: Sets the output audio volume.
+      payload:
+        volume:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Target output volume percentage.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/microphone-toggle
+      description: Toggles the microphone state (enabled/disabled).
+      payload:
+        enabled:
+          type: boolean
+          description: Target state of the microphone.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/voice-changer-toggle
+      description: Toggles the voice changer/manipulator effect.
+      payload:
+        enabled:
+          type: boolean
+          description: Target state of the voice changer.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/background-sound-toggle
+      description: Toggles loop playback of background sounds.
+      payload:
+        enabled:
+          type: boolean
+          description: Target state of the background sound.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/leds-toggle
+      description: Toggles the LED strip/lights on the device.
+      payload:
+        enabled:
+          type: boolean
+          description: Target state of LEDs.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/leds-brightness
+      description: Sets the brightness level of the LEDs.
+      payload:
+        brightness:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: LED brightness percentage.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/eyes-brightness
+      description: Sets the brightness level of the suit eyes display.
+      payload:
+        brightness:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Eye display brightness percentage.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/leds-color
+      description: Changes the LED color.
+      payload:
+        color:
+          type: string
+          description: Color value (hex representation or name).
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/leds-effect
+      description: Sets the current light pattern or effect.
+      payload:
+        effect:
+          type: string
+          description: Name of the LED effect pattern (e.g. rainbow, breathing).
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/hotword-detection-toggle
+      description: Toggles wake word detection listener on the suit.
+      payload:
+        enabled:
+          type: boolean
+          description: Target state of hotword detection.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/hotword-trigger
+      description: Manually triggers the wake word event.
+      payload:
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/text-to-speech
+      description: Triggers TTS synthesis and speech playback on the device.
+      payload:
+        text:
+          type: string
+          description: Content to be spoken by the device.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/set-expression
+      description: Sets the facial expression displayed on the suit eyes/screen.
+      payload:
+        expression:
+          type: string
+          description: Expression name (e.g. happy, sad, neutral).
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/face-expression-tracking-toggle
+      description: Toggles expression tracking (using camera feedback to match expressions).
+      payload:
+        enabled:
+          type: boolean
+          description: Target state of expression tracking.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/eye-tracking-toggle
+      description: Toggles look-at-target/eye tracking mode.
+      payload:
+        enabled:
+          type: boolean
+          description: Target state of eye tracking.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/motors-toggle
+      description: Toggles the suit servo motors.
+      payload:
+        enabled:
+          type: boolean
+          description: Target power state of the motors.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/move-ear
+      description: Moves the left ear servo, right ear servo, or both to a target position.
+      payload:
+        side:
+          type: string
+          enum: [left, right, both]
+          description: Which ear(s) to move.
+        position:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          description: Normalised target position (0.0 = minimum angle, 1.0 = maximum angle).
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/move-eyebrow
+      description: Moves the left eyebrow servo, right eyebrow servo, or both to a target position.
+      payload:
+        side:
+          type: string
+          enum: [left, right, both]
+          description: Which eyebrow(s) to move.
+        position:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          description: Normalised target position (0.0 = minimum angle, 1.0 = maximum angle).
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/move-muzzle
+      description: Moves the muzzle servo to a target position.
+      payload:
+        position:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          description: Normalised target position (0.0 = fully closed, 1.0 = fully open).
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/set-pose
+      description: Applies a full facial pose macro, setting all servo positions simultaneously.
+      payload:
+        expression:
+          type: string
+          description: Named pose macro to apply (e.g. happy, sad, angry, excited, surprised, tired, neutral).
+          nullable: true
+        scores:
+          type: object
+          description: Optional map of expression name to confidence score. The highest-scoring expression is applied.
+          nullable: true
+          additionalProperties:
+            type: number
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/external-commands-lock
+      description: Locks or unlocks external command processing.
+      payload:
+        locked:
+          type: boolean
+          description: Locked state.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/eyes-video
+      description: Sends a video URL to play on the eyes display.
+      payload:
+        url:
+          type: string
+          description: URL of the video file to be rendered.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/shutdown
+      description: Initiates device shutdown.
+      payload:
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/reboot
+      description: Reboots the device hardware.
+      payload:
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/kill-software
+      description: Terminates the primary suit control daemon/software process.
+      payload:
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/set-sound-device
+      description: Sets the system input or output audio device.
+      payload:
+        deviceType:
+          type: string
+          enum: [input, output]
+          description: Audio channel type.
+        deviceName:
+          type: string
+          description: Name of the audio interface.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+  # Topics used for retained lists
+  data:
+    - topic: dynamo/data/sound_effects
+      description: Stream of available sound effects configured on the suit.
+      payload:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            filename:
+              type: string
+              nullable: true
+
+    - topic: dynamo/data/voice_effects
+      description: Stream of voice effects supported by the voice changer.
+      payload:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            type:
+              type: string
+
+    - topic: dynamo/data/sound_devices
+      description: List of detected audio hardware devices (input/output) on the system.
+      payload:
+        type: array
+        items:
+          type: string
+
+    - topic: dynamo/data/bitmap
+      description: Incoming bitmap data for status or rendering updates.
+      payload:
+        type: object
+        properties:
+          bitmap:
+            type: string
+            description: Base64 or binary string of the bitmap.
+
+    - topic: dynamo/data/chat_logs
+      description: Logs and transcripts of the voice/text interaction history.
+      payload:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+            content:
+              type: string
+            type:
+              type: string
+              enum: [prompt, response]
+            timestamp:
+              type: string
+              format: date-time
+  
+  # Current states of the suit components  
+  states:
+    - topic: dynamo/state/servo
+      description: Current position of the servos.
+      payload:
+        type: object
+        properties:
+          servo:
+            type: string
+            enum: [ear_left, ear_right, eyebrow_left, eyebrow_right, muzzle]
+          angle:
+            type: number
+            description: Angle in degrees.
+          position:
+            type: number
+            minimum: 0.0
+            maximum: 1.0
+            description: Normalized position 0-1.
+
+  # Other topics
+  other:
+    - topic: mekhy/app/lock
+      description: Synchronizes app lock/restricted status state.
+      payload:
+        type: object
+        description: System/app lock state.
+
+    - topic: dynamo/spotify
+      description: Receives Spotify play, pause, or search actions to trigger internal Spotify API client hooks.
+      payload:
+        type: object
+        properties:
+          action:
+            type: string
+            enum: [search_and_play, play, pause]
+          query:
+            type: string
+            description: Optional query used when action is 'search_and_play'.
+          uris:
+            type: array
+            items:
+              type: string
+            description: Optional track URIs to play.
+          device_id:
+            type: string
+            description: Optional target device ID.
