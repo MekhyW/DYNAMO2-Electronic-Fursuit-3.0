@@ -10,7 +10,7 @@ choco install ffmpeg
 
 :: Clone the auxiliary repository
 cd C:\Users\LattePanda\Documents\GitHub
-git clone https://github.com/MekhyW/Eye-Graphics
+git clone https://github.com/MekhyW/DYNAMO2-Eye-Graphics
 
 :: Pause at the end
 pause
