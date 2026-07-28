@@ -24,12 +24,7 @@ TOPIC_MOVE_EAR      = b"dynamo/commands/move-ear"
 TOPIC_MOVE_EYEBROW  = b"dynamo/commands/move-eyebrow"
 TOPIC_MOVE_MUZZLE   = b"dynamo/commands/move-muzzle"
 TOPIC_SET_POSE      = b"dynamo/commands/set-pose"
-SUBSCRIBED_TOPICS: list[bytes] = [
-    TOPIC_MOVE_EAR,
-    TOPIC_MOVE_EYEBROW,
-    TOPIC_MOVE_MUZZLE,
-    TOPIC_SET_POSE,
-]
+SUBSCRIBED_TOPICS: list[bytes] = [TOPIC_MOVE_EAR, TOPIC_MOVE_EYEBROW, TOPIC_MOVE_MUZZLE, TOPIC_SET_POSE]
 
 class ServoId(str, Enum):
     EAR_LEFT      = "ear_left"
@@ -319,7 +314,6 @@ class ActuatorsNode:
         if self._zmq_ctx is not None:
             self._zmq_ctx.destroy(linger=0)
         log.info("Actuators node stopped.")
-
 
 
 def main() -> None:

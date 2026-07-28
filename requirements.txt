@@ -1,3 +1,5 @@
 pytest
 pyzmq
 paho-mqtt
+psutil
+pycaw
