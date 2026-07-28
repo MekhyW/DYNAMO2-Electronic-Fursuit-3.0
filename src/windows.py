@@ -14,8 +14,6 @@ from comtypes import CLSCTX_ALL
 import comtypes
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 import zmq
-from dotenv import load_dotenv
-load_dotenv("../.env")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] windows: %(message)s", datefmt="%H:%M:%S")
 log = logging.getLogger("windows")
 

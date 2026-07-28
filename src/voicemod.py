@@ -16,9 +16,9 @@ load_dotenv("../.env")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] voicemod: %(message)s", datefmt="%H:%M:%S")
 log = logging.getLogger("voicemod")
 
-ZMQ_SUB_ADDRESS:  str = "tcp://localhost:5555"   # connect to mqttbridge PUB bus
-ZMQ_PUSH_ADDRESS: str = "tcp://localhost:5556"   # connect to mqttbridge PULL socket
-STATUS_PUBLISH_INTERVAL: float = 5.0             # seconds between status pushes
+ZMQ_SUB_ADDRESS:  str = "tcp://localhost:5555"
+ZMQ_PUSH_ADDRESS: str = "tcp://localhost:5556"
+STATUS_PUBLISH_INTERVAL: float = 5.0   
 
 TOPIC_STATUS = b"dynamo/status/voicemod"
 TOPIC_DATA_VOICE_EFFECTS = b"dynamo/data/voice_effects"

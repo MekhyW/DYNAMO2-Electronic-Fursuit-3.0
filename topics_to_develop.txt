@@ -26,7 +26,6 @@ unity.py:
 - set eye position (sub 'dynamo/eyes/position' and 'dynamo/commands/eye-tracking-toggle')
 - set goggles animation (sub 'dynamo/goggles')
 - play video (sub 'dynamo/eyes-video')
-- play minigame (sub 'dynamo/eyes-minigame')
 
 leds.py:
 - controller connection status ('dynamo/leds/status')
@@ -36,19 +35,8 @@ leds.py:
 - set segment effect, including waveform and beat if appropriate (sub 'dynamo/commands/leds-effect', 'dynamo/microphone/internal/fft', 'dynamo/microphone/external/fft', 'dynamo/microphone/external/music-detect' and 'dynamo/microphone/external/beat-detect')
 - play light sequence once (sub 'dynamo/commands/leds-animation')
 
-audio_sfx.py:
-- fetch list of meme sfx ('dynamo/data/sound_effects')
-- play sfx (sub 'dynamo/commands/play-sound-effect'; can be meme, system, passive or soliloquy)
-- play tts (sub 'dynamo/commands/text-to-speech', elevenlabs)
-
 audio_bgm.py:
 - 
-
-telegram.py:
-- bot status ('dynamo/status/telegram')
-- bot defaults, same as dynamo-1
-- send message (sub 'dynamo/commands/telegram/send-text')
-- send media (sub 'dynamo/commands/telegram/send-media')
 
 control_state.py:
 - sub to all local input topics

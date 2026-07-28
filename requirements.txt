@@ -4,3 +4,4 @@ paho-mqtt
 psutil
 pycaw
 git+https://github.com/MekhyW/telepota.git
+elevenlabs
