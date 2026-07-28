@@ -16,9 +16,6 @@ microphone.py:
 - internal speech emotion recognition ('dynamo/microphone/internal/ser')
 - external music and beat detection algo ('dynamo/microphone/external/music-detect' and 'dynamo/microphone/external/beat-detect')
 
-mqttbridge.py:
-- routes cloud mqtt commands to zeromq for local nodes, preserving names and params
-
 handheld.py:
 - handheld commands ('dynamo/handheld/command')
 
@@ -40,7 +37,7 @@ leds.py:
 - play light sequence once (sub 'dynamo/commands/leds-animation')
 
 actuators.py:
-- board connection status ('dynamo/actuators/status')
+- board connection status ('dynamo/status/actuators')
 - move ear l/r (sub 'dynamo/actuators/move-ear')
 - move eyebrow l/r (sub 'dynamo/actuators/move-eyebrow')
 - macro presets (sub 'dynamo/expression')
@@ -52,19 +49,6 @@ audio_sfx.py:
 
 audio_bgm.py:
 - 
-
-voicemod.py:
-- fetch list of voice effects ('dynamo/data/voice_effects')
-- set voice effect (sub 'dynamo/commands/set-voice-effect')
-- toggle vc on/off (sub 'dynamo/commands/voice-changer-toggle')
-- toggle mute/unmute (sub 'dynamo/commands/microphone-toggle')
-
-windows.py:
-- system status ('dynamo/status/system')
-- set global volume (sub 'dynamo/commands/set-output-volume')
-- shutdown (sub 'dynamo/commands/shutdown')
-- reboot (sub 'dynamo/commands/reboot')
-- kill software (sub 'dynamo/commands/kill-software')
 
 telegram.py:
 - bot status ('dynamo/status/telegram')

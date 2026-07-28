@@ -8,7 +8,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable
 import zmq
-
+from dotenv import load_dotenv
+load_dotenv("../.env")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] actuators: %(message)s", datefmt="%H:%M:%S")
 log = logging.getLogger("actuators")
 
