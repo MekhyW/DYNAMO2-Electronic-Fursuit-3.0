@@ -8,6 +8,8 @@ import pygame
 from elevenlabs import ElevenLabs, VoiceSettings
 import tempfile
 import zmq
+from dotenv import load_dotenv
+load_dotenv("../.env")
 
 ZMQ_SUB_ADDRESS: str = "tcp://localhost:5555"
 ZMQ_PUSH_ADDRESS: str = "tcp://localhost:5556"
@@ -121,9 +123,6 @@ class AudioSFXNode:
             log.warning("text-to-speech payload missing 'text'")
             return
         api_key = os.getenv("eleven_api_key")
-        if not api_key:
-            log.error("ElevenLabs API key not set in environment variable 'eleven_api_key'")
-            return
         try:
             client = ElevenLabs(api_key=api_key)
             voice_settings = VoiceSettings(stability=0.3, similarity_boost=1.0, style=0.0, speed=1.1, use_speaker_boost=True)
