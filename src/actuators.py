@@ -15,10 +15,8 @@ log = logging.getLogger("actuators")
 ZMQ_SUB_ADDRESS:  str = "tcp://localhost:5555"   # connect to mqttbridge PUB bus
 ZMQ_PUSH_ADDRESS: str = "tcp://localhost:5556"   # connect to mqttbridge PULL socket
 STATUS_PUBLISH_INTERVAL:     float = 5.0          # seconds between status pushes
-SERVO_STATE_PUBLISH_INTERVAL: float = 0.1         # seconds between servo-state telemetry
 
-TOPIC_STATUS       = b"dynamo/actuators/status"
-TOPIC_SERVO_STATES = b"dynamo/actuators/servo-states"
+TOPIC_STATUS       = b"dynamo/status/actuators"
 TOPIC_STATE_SERVO  = b"dynamo/state/servo"
 TOPIC_MOVE_EAR      = b"dynamo/commands/move-ear"
 TOPIC_MOVE_EYEBROW  = b"dynamo/commands/move-eyebrow"
@@ -160,7 +158,6 @@ class ActuatorsNode:
         self._running.set()
         self._setup_zmq()
         threading.Thread(target=self._status_loop, daemon=True, name="status-loop").start()
-        threading.Thread(target=self._servo_state_loop, daemon=True, name="servo-state-loop").start()
         log.info("Actuators node started. SUB=%s  PUSH=%s", ZMQ_SUB_ADDRESS, ZMQ_PUSH_ADDRESS)
         self._event_loop()
 
@@ -296,13 +293,6 @@ class ActuatorsNode:
         while self._running.is_set(): # Periodically push the node status heartbeat to the bridge
             time.sleep(STATUS_PUBLISH_INTERVAL)
             self._push_status(online=True)
-
-    def _servo_state_loop(self) -> None:
-        while self._running.is_set():
-            snapshot = self._state.snapshot()
-            angles = {s_name: normalised_to_angle(ServoId(s_name), pos) for s_name, pos in snapshot.items()}
-            self._push(TOPIC_SERVO_STATES, {"positions": snapshot, "angles": angles})
-            time.sleep(SERVO_STATE_PUBLISH_INTERVAL)
 
     def _teardown(self) -> None:
         log.info("Tearing down connections...")

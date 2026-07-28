@@ -284,6 +284,7 @@ topics:
         user:
           $ref: '#/common_payloads/TelegramUser'
 
+
   # Topics used for retained lists
   data:
     - topic: dynamo/data/sound_effects
@@ -349,24 +350,108 @@ topics:
               type: string
               format: date-time
   
-  # Current states of the suit components  
+
+  # Current states of the suit components
   states:
     - topic: dynamo/state/servo
-      description: Current position of the servos.
+      description: Single servo update emitted whenever a servo or pose command is applied.
       payload:
         type: object
         properties:
           servo:
             type: string
             enum: [ear_left, ear_right, eyebrow_left, eyebrow_right, muzzle]
+            description: Which servo was updated.
           angle:
-            type: number
-            description: Angle in degrees.
+            type: integer
+            description: Angle in degrees derived from the normalized position.
           position:
             type: number
             minimum: 0.0
             maximum: 1.0
             description: Normalized position 0-1.
+
+    - topic: dynamo/state/output-volume
+      description: Current output audio volume level published by the Windows node.
+      payload:
+        type: object
+        properties:
+          volume:
+            type: number
+            minimum: 0.0
+            maximum: 1.0
+            description: Current output volume in normalized scalar form.
+
+
+  # Current status of nodes
+  status:
+    - topic: dynamo/status/actuators
+      description: Heartbeat status published by the actuators node.
+      payload:
+        type: object
+        properties:
+          status:
+            type: string
+            enum: [online, offline]
+            description: Current node availability state.
+          node:
+            type: string
+            description: Name of the publishing node.
+
+    - topic: dynamo/status/windows
+      description: Periodic system status update published by the Windows node.
+      payload:
+        type: object
+        properties:
+          node:
+            type: string
+            description: Name of the publishing node.
+          platform:
+            type: string
+            description: Platform identifier such as win32 or linux.
+          cpu:
+            type: object
+            properties:
+              physical_cores:
+                type: integer
+                description: Number of physical CPU cores.
+              total_cores:
+                type: integer
+                description: Total number of CPU cores (including logical).
+              usage:
+                type: number
+                description: Current CPU usage percentage.
+          memory:
+            type: object
+            properties:
+              total:
+                type: integer
+                description: Total system memory in bytes.
+              available:
+                type: integer
+                description: Available system memory in bytes.
+              used:
+                type: integer
+                description: Used system memory in bytes.
+              percent:
+                type: number
+                description: Memory usage percentage.
+          disk:
+            type: object
+            properties:
+              total:
+                type: integer
+                description: Total disk space in bytes.
+              used:
+                type: integer
+                description: Used disk space in bytes.
+              free:
+                type: integer
+                description: Free disk space in bytes.
+              percent:
+                type: number
+                description: Disk usage percentage.
+
 
   # Other topics
   other:

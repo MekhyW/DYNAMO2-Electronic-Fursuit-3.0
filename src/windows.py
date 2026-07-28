@@ -23,7 +23,7 @@ ZMQ_PUSH_ADDRESS: str = "tcp://localhost:5556"
 STATUS_PUBLISH_INTERVAL: float = 5.0
 DEVICE_PUBLISH_INTERVAL: float = 15.0
 
-TOPIC_STATUS = b"dynamo/windows/status"
+TOPIC_STATUS = b"dynamo/status/windows"
 TOPIC_SOUND_DEVICES = b"dynamo/data/sound_devices"
 TOPIC_OUTPUT_VOLUME = b"dynamo/state/output-volume"
 TOPIC_SET_OUTPUT_VOLUME = b"dynamo/commands/set-output-volume"
