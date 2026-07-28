@@ -284,6 +284,31 @@ topics:
         user:
           $ref: '#/common_payloads/TelegramUser'
 
+    - topic: dynamo/commands/telegram/send-text
+      description: Sends a text message through the Telegram bot.
+      payload:
+        text:
+          type: string
+          description: Text message to send.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
+    - topic: dynamo/commands/telegram/send-media
+      description: Sends a media message (picture, video, document) through the Telegram bot.
+      payload:
+        media_type:
+          type: string
+          enum: [picture, video, document]
+          description: Type of media to send.
+        media_url:
+          type: string
+          description: URL of the media to send.
+        caption:
+          type: string
+          description: Caption for the media.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
+
 
   # Topics used for retained lists
   data:
@@ -451,6 +476,18 @@ topics:
               percent:
                 type: number
                 description: Disk usage percentage.
+    
+    - topic: dynamo/status/telegram
+      description: Periodic system status update published by the Telegram node.
+      payload:
+        type: object
+        properties:
+          node:
+            type: string
+            description: Name of the publishing node.
+          status:
+            type: string
+            description: Status of the node.
 
 
   # Other topics
