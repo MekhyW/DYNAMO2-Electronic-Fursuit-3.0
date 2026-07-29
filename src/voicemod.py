@@ -72,6 +72,7 @@ class VoicemodNode:
         self._setup_zmq()
         self._async_thread = threading.Thread(target=self._run_async_loop, daemon=True, name="voicemod-async")
         self._async_thread.start()
+        asyncio.run_coroutine_threadsafe(self._initialize_on_start(), self._loop)
         threading.Thread(target=self._status_loop, daemon=True, name="status-loop").start()
         log.info("Voicemod node started. SUB=%s PUSH=%s", ZMQ_SUB_ADDRESS, ZMQ_PUSH_ADDRESS)
         self._event_loop()
@@ -293,6 +294,13 @@ class VoicemodNode:
 
     async def _stop_sounds(self) -> None:
         await self._send_message('stopAllMemeSounds', {})
+
+    async def _initialize_on_start(self) -> None:
+        """Set default voice effect and enable microphone after startup."""
+        while self._websocket is None:
+            await asyncio.sleep(0.5)
+        await self._set_voice("2eeebd97-8de3-4d94-91ae-79e6588e7715")
+        await self._toggle_hear_my_voice(True)
 
     # ZMQ Communications & Loop
     def _push(self, topic: bytes, payload: Any) -> None:
