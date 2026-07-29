@@ -16,14 +16,6 @@ microphone.py:
 - internal speech emotion recognition ('dynamo/microphone/internal/ser')
 - external music and beat detection algo ('dynamo/microphone/external/music-detect' and 'dynamo/microphone/external/beat-detect')
 
-unity.py:
-- connection status ('dynamo/unity/status')
-- set expression scores (sub 'dynamo/expression' and 'dynamo/commands/face-expression-tracking-toggle')
-- set eyelids (sub 'dynamo/eyes/eyelid' and 'dynamo/commands/eye-tracking-toggle')
-- set eye position (sub 'dynamo/eyes/position' and 'dynamo/commands/eye-tracking-toggle')
-- set goggles animation (sub 'dynamo/goggles')
-- play video (sub 'dynamo/eyes-video')
-
 leds.py:
 - controller connection status ('dynamo/leds/status')
 - toggle lights on/off (sub 'dynamo/commands/leds-toggle')

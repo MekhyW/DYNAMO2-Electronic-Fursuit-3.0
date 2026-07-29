@@ -348,6 +348,42 @@ topics:
         items:
           type: string
 
+    - topic: dynamo/data/eye-state
+      description: Live eye-display state published by vision/control nodes and consumed by the Unity node.
+      payload:
+        type: object
+        properties:
+          displacement_x:
+            type: number
+            minimum: -1.0
+            maximum: 1.0
+            description: Horizontal eye displacement (negative = left, positive = right).
+          displacement_y:
+            type: number
+            minimum: -1.0
+            maximum: 1.0
+            description: Vertical eye displacement (negative = down, positive = up).
+          closeness_left:
+            type: number
+            minimum: 0.0
+            maximum: 1.0
+            description: Left eyelid closeness (0 = fully open, 1 = fully closed).
+          closeness_right:
+            type: number
+            minimum: 0.0
+            maximum: 1.0
+            description: Right eyelid closeness (0 = fully open, 1 = fully closed).
+          emotion_scores:
+            type: array
+            description: Ordered confidence scores for each expression (neutral, happy, sad, angry, excited, surprised).
+            items:
+              type: number
+              minimum: 0.0
+              maximum: 1.0
+          silly_mode:
+            type: boolean
+            description: Whether silly mode is currently active.
+
     - topic: dynamo/data/bitmap
       description: Incoming bitmap data for status or rendering updates.
       payload:
@@ -506,6 +542,19 @@ topics:
           status:
             type: string
             description: Status of the node.
+
+    - topic: dynamo/status/unity
+      description: Heartbeat status published by the Unity node.
+      payload:
+        type: object
+        properties:
+          status:
+            type: string
+            enum: [online, offline]
+            description: Current node availability state.
+          node:
+            type: string
+            description: Name of the publishing node.
 
 
   # Other topics
