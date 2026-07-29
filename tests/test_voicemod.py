@@ -65,9 +65,9 @@ class TestVoicemodNode(unittest.TestCase):
         node._push = MagicMock()
         node._publish_voice_effects()
         expected_payload = [
-            {"id": 0, "name": "Astronaut", "type": "voicemod"},
-            {"id": 1, "name": "Custom Voice", "type": "voicemod"},
-            {"id": 2, "name": "Robot", "type": "voicemod"}
+            {"id": 'uuid-astro-123', "name": "Astronaut", "type": "modulation"},
+            {"id": 'uuid-custom-456', "name": "Custom Voice", "type": "modulation"},
+            {"id": 'uuid-robot-789', "name": "Robot", "type": "modulation"}
         ]
         node._push.assert_called_once_with(voicemod.TOPIC_DATA_VOICE_EFFECTS, expected_payload)
 
@@ -77,8 +77,8 @@ class TestVoicemodNode(unittest.TestCase):
         node._push = MagicMock()
         node._publish_sound_effects()
         expected_payload = [
-            {"id": 0, "name": "applause", "filename": "applause.mp3"},
-            {"id": 1, "name": "laughter", "filename": "laughter.mp3"}
+            {"id": "applause.mp3", "name": "applause"},
+            {"id": "laughter.mp3", "name": "laughter"}
         ]
         node._push.assert_called_once_with(voicemod.TOPIC_DATA_SOUND_EFFECTS, expected_payload)
 

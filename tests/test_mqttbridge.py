@@ -45,10 +45,10 @@ class TestMQTTBridge(unittest.TestCase):
     def test_config_loading_success(self):
         from src.mqttbridge import load_config
         with patch.dict("os.environ", {
-            "HIVEMQ_HOST": "hive.com",
-            "HIVEMQ_PORT": "8883",
-            "HIVEMQ_USERNAME": "foo",
-            "HIVEMQ_PASSWORD": "bar"
+            "mqtt_host": "hive.com",
+            "mqtt_port": "8883",
+            "mqtt_username": "foo",
+            "mqtt_password": "bar"
         }):
             cfg = load_config()
             self.assertEqual(cfg.hivemq_host, "hive.com")
@@ -79,7 +79,7 @@ class TestMQTTBridge(unittest.TestCase):
         node._publish_cloud.reset_mock()
         # 2. Local message -> cloud and ZMQ
         node._fan_out("dynamo/test", valid_payload, "local")
-        node._publish_cloud.assert_called_once_with("dynamo/test", None, raw=valid_payload)
+        node._publish_cloud.assert_called_once_with("dynamo/test", None, raw=valid_payload, retain=False)
         node._zmq_pub.assert_called_once_with(b"dynamo/test", valid_payload)
         node._publish_local.assert_not_called()
         node._publish_local.reset_mock()
@@ -87,7 +87,7 @@ class TestMQTTBridge(unittest.TestCase):
         node._publish_cloud.reset_mock()
         # 3. ZMQ message -> cloud and local
         node._fan_out("dynamo/test", valid_payload, "zmq")
-        node._publish_cloud.assert_called_once_with("dynamo/test", None, raw=valid_payload)
+        node._publish_cloud.assert_called_once_with("dynamo/test", None, raw=valid_payload, retain=False)
         node._publish_local.assert_called_once_with("dynamo/test", None, raw=valid_payload)
         node._zmq_pub.assert_not_called()
 
