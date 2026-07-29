@@ -25,7 +25,7 @@ except Exception as e:
 
 ZMQ_SUB_ADDRESS: str = "tcp://localhost:5555"
 ZMQ_PUSH_ADDRESS: str = "tcp://localhost:5556"
-STATUS_PUBLISH_INTERVAL: float = 5.0
+STATUS_PUBLISH_INTERVAL: float = 10.0
 
 TOPIC_STATUS = b"dynamo/status/telegram"
 TOPIC_SEND_TEXT = b"dynamo/commands/telegram/send-text"

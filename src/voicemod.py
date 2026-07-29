@@ -18,7 +18,7 @@ log = logging.getLogger("voicemod")
 
 ZMQ_SUB_ADDRESS:  str = "tcp://localhost:5555"
 ZMQ_PUSH_ADDRESS: str = "tcp://localhost:5556"
-STATUS_PUBLISH_INTERVAL: float = 5.0   
+STATUS_PUBLISH_INTERVAL: float = 10.0   
 
 TOPIC_STATUS = b"dynamo/status/voicemod"
 TOPIC_DATA_VOICE_EFFECTS = b"dynamo/data/voice_effects"
@@ -104,6 +104,7 @@ class VoicemodNode:
                     self._websocket = ws
                     log.info("Voicemod connected! Registering client...")
                     reg_response = await self._send_message("registerClient", {"clientKey": voicemod_key})
+                    reg_response = await self._send_message("registerClient", {"clientKey": voicemod_key})
                     log.info("Client registration response: %s", reg_response)
                     await self._fetch_voices_and_sounds()
                     while self._running.is_set():
@@ -134,47 +135,56 @@ class VoicemodNode:
                 start_time = time.time()
                 while time.time() - start_time < 5.0:
                     try:
-                        response_str = await asyncio.wait_for(self._websocket.recv(), timeout=2.0)
+                        response_str = await self._websocket.recv()
                         response = json.loads(response_str)
-                        if command in self._valid_response_actions:
-                            action = response.get('action')
-                            if action not in self._valid_response_actions[command]:
-                                continue
+                        if command in self._valid_response_actions and 'action' in response and response['action'] not in self._valid_response_actions[command]:
+                            continue
                         return response
                     except asyncio.TimeoutError:
-                        break
+                        log.debug("Voicemod timeout")
             except Exception as e:
                 log.error("Error communicating with Voicemod WebSocket: %s", e)
         return None
 
     async def _fetch_voices_and_sounds(self) -> None:
         self._voices = []
-        response = await self._send_message('getVoices', {})
-        if response and 'payload' in response and response['payload']:
-            voices_list = response['payload'].get('voices', [])
-            for voice in voices_list:
-                self._voices.append({"name": voice.get("friendlyName", ""), "id": voice.get("id", "")})
-            self._voices = sorted(self._voices, key=lambda k: k['name'])
-            log.info("Loaded %d voice effects", len(self._voices))
-            self._publish_voice_effects()
+        for _ in range(3):
+            response = await self._send_message('getVoices', {})
+            if not response or 'payload' not in response:
+                continue
+            payload = response['payload']
+            if payload and 'voices' in payload:
+                voices_list = payload["voices"]
+                for voice in voices_list:
+                    self._voices.append({"name": voice["friendlyName"], "id": voice["id"]})
+                self._voices = sorted(self._voices, key=lambda k: k['name'])
+                log.info("Loaded %d voice effects", len(self._voices))
+                self._publish_voice_effects()
+                break
         self._sounds = []
-        response = await self._send_message('getMemes', {})
-        if response and 'actionObject' in response and response['actionObject']:
-            memes = response['actionObject'].get('listOfMemes', [])
-            for sound in memes:
-                if sound.get("Type") == "PlayStop" and sound.get('Name', '').islower():
-                    self._sounds.append({"name": sound.get("Name", ""), "id": sound.get("FileName", "")})
-            self._sounds = sorted(self._sounds, key=lambda k: k['name'])
-            log.info("Loaded %d soundboard memes", len(self._sounds))
-            self._publish_sound_effects()
+        for _ in range(3):
+            response = await self._send_message('getMemes', {})
+            if response and 'actionObject' in response and 'listOfMemes' in response['actionObject']:
+                memes = response['actionObject'].get('listOfMemes', [])
+                for sound in memes:
+                    if sound.get("Type") == "PlayStop" and sound.get('Name', '').islower():
+                        self._sounds.append({"name": sound.get("Name", ""), "id": sound.get("FileName", "")})
+                self._sounds = sorted(self._sounds, key=lambda k: k['name'])
+                log.info("Loaded %d soundboard memes", len(self._sounds))
+                self._publish_sound_effects()
+                break
 
     def _publish_voice_effects(self) -> None:
-        payload = [{"id": idx, "name": voice["name"], "type": "voicemod"} for idx, voice in enumerate(self._voices)]
-        self._push(TOPIC_DATA_VOICE_EFFECTS, payload)
+        voice_effects = []
+        for voice in self._voices:
+            voice_effects.append({'id': voice['id'], 'name': voice['name'], 'type': 'modulation'})
+        self._push(TOPIC_DATA_VOICE_EFFECTS, voice_effects)
 
     def _publish_sound_effects(self) -> None:
-        payload = [{"id": idx, "name": sound["name"], "filename": sound["id"]} for idx, sound in enumerate(self._sounds)]
-        self._push(TOPIC_DATA_SOUND_EFFECTS, payload)
+        sound_effects = []
+        for sound in self._sounds:
+            sound_effects.append({'id': sound['id'], 'name': sound['name']})
+        self._push(TOPIC_DATA_SOUND_EFFECTS, sound_effects)
 
     def _resolve_voice_id(self, effect_id: Any) -> str | None:
         if effect_id is None:

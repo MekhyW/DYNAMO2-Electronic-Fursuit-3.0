@@ -10,7 +10,8 @@ from dataclasses import dataclass
 from typing import Any
 import paho.mqtt.client as mqtt
 import zmq
-
+from dotenv import load_dotenv
+load_dotenv("../.env")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] mqttbridge: %(message)s", datefmt="%H:%M:%S")
 log = logging.getLogger("mqttbridge")
 
@@ -36,10 +37,10 @@ class BridgeConfig:
 
 def load_config() -> BridgeConfig:
     return BridgeConfig(
-        hivemq_host=_env("HIVEMQ_HOST"),
-        hivemq_port=int(_env("HIVEMQ_PORT")),
-        hivemq_username=_env("HIVEMQ_USERNAME"),
-        hivemq_password=_env("HIVEMQ_PASSWORD"),
+        hivemq_host=_env("mqtt_host"),
+        hivemq_port=int(_env("mqtt_port")),
+        hivemq_username=_env("mqtt_username"),
+        hivemq_password=_env("mqtt_password"),
     )
 
 
@@ -197,13 +198,17 @@ class MQTTBridgeNode:
         except json.JSONDecodeError:
             log.warning("Non-JSON message on %s from %s — dropping", topic, source)
             return
+        retain = topic.startswith("dynamo/data/") # Topics whose last value should be retained by HiveMQ so mobile clients always receive the current list immediately on subscribe.
         if source != "cloud":
-            self._publish_cloud(topic, None, raw=payload_bytes)
+            self._publish_cloud(topic, None, raw=payload_bytes, retain=retain)
         if source != "local":
             self._publish_local(topic, None, raw=payload_bytes)
         if source != "zmq":
             self._zmq_pub(topic.encode(), payload_bytes)
-        log.debug("%s → all: %s", source, topic)
+        if retain:
+            log.debug("%s → all (retained): %s", source, topic)
+        else:
+            log.debug("%s → all: %s", source, topic)
 
     def _publish_cloud(self, topic: str, payload: dict[str, Any] | None, raw: bytes | None = None, qos: int = 0, retain: bool = False) -> None:
         if not self._cloud_connected.is_set():
