@@ -244,15 +244,6 @@ topics:
         user:
           $ref: '#/common_payloads/TelegramUser'
 
-    - topic: dynamo/eyes-video
-      description: Sends a video URL to play on the eyes display.
-      payload:
-        url:
-          type: string
-          description: URL of the video file to be rendered.
-        user:
-          $ref: '#/common_payloads/TelegramUser'
-
     - topic: dynamo/commands/shutdown
       description: Initiates device shutdown.
       payload:
@@ -584,3 +575,12 @@ topics:
           device_id:
             type: string
             description: Optional target device ID.
+
+    - topic: dynamo/eyes-video
+      description: Sends a video URL to play on the eyes display.
+      payload:
+        url:
+          type: string
+          description: URL of the video file to be rendered.
+        user:
+          $ref: '#/common_payloads/TelegramUser'
