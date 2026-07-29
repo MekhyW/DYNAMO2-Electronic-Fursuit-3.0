@@ -31,6 +31,7 @@ TOPIC_PLAY_SOUND_EFFECT = b"dynamo/commands/play-sound-effect"
 SUBSCRIBED_TOPICS: list[bytes] = [TOPIC_SET_VOICE_EFFECT, TOPIC_VOICE_CHANGER_TOGGLE, TOPIC_MICROPHONE_TOGGLE, TOPIC_BACKGROUND_SOUND_TOGGLE, TOPIC_PLAY_SOUND_EFFECT]
 
 voicemod_key = os.environ.get("voicemod_key") or os.environ.get("VOICEMOD_KEY", "")
+MEKHY_VOICE_DEFAULT = "2eeebd97-8de3-4d94-91ae-79e6588e7715"
 
 class VoicemodNode:
     """Voicemod node interfacing with Voicemod Desktop Client WebSocket."""
@@ -299,7 +300,7 @@ class VoicemodNode:
         """Set default voice effect and enable microphone after startup."""
         while self._websocket is None:
             await asyncio.sleep(0.5)
-        await self._set_voice("2eeebd97-8de3-4d94-91ae-79e6588e7715")
+        await self._set_voice(MEKHY_VOICE_DEFAULT)
         await self._toggle_hear_my_voice(True)
 
     # ZMQ Communications & Loop

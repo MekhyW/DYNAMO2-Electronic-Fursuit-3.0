@@ -16,9 +16,6 @@ microphone.py:
 - internal speech emotion recognition ('dynamo/microphone/internal/ser')
 - external music and beat detection algo ('dynamo/microphone/external/music-detect' and 'dynamo/microphone/external/beat-detect')
 
-handheld.py:
-- handheld commands ('dynamo/handheld/command')
-
 unity.py:
 - connection status ('dynamo/unity/status')
 - set expression scores (sub 'dynamo/expression' and 'dynamo/commands/face-expression-tracking-toggle')

@@ -407,6 +407,24 @@ topics:
             maximum: 1.0
             description: Current output volume in normalized scalar form.
 
+    - topic: dynamo/state/handheld-input
+      description: Handheld input events published by the handheld node.
+      payload:
+        type: object
+        properties:
+          type:
+            type: string
+            description: Type of input event (tap, hold, combo).
+          key:
+            type: string
+            description: Which key was pressed (left, right, up, down, enter).
+          held:
+            type: boolean
+            description: Whether the key is held (for hold events only).
+          timestamp:
+            type: number
+            description: Timestamp of the event.
+
 
   # Current status of nodes
   status:
