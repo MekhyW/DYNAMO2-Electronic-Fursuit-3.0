@@ -30,7 +30,7 @@ class TestLedsNode(unittest.TestCase):
         self.assertEqual(palette.primary, (0, 255, 255))
         self.assertNotEqual(palette.accent, palette.primary)
         self.assertNotEqual(palette.shadow, palette.primary)
-
+    
     @patch("src.leds.time.sleep", return_value=None)
     @patch("src.leds.urllib.request.urlopen")
     def test_renderer_probes_catalog_and_builds_wled_payload(self, mock_urlopen, _mock_sleep) -> None:
@@ -47,7 +47,6 @@ class TestLedsNode(unittest.TestCase):
         self.assertEqual(renderer.led_count, 3)
         self.assertEqual(renderer.resolve_effect_id("Rainbow"), 1)
         self.assertEqual(renderer.resolve_palette_id("Rainbow"), 2)
-
         theme = leds.ThemeManager("#112233").palette()
         payload = renderer.build_state_payload(
             enabled=True,
@@ -61,7 +60,6 @@ class TestLedsNode(unittest.TestCase):
         self.assertEqual(payload["seg"][0]["fx"], renderer.resolve_effect_id("Rainbow"))
         self.assertEqual(payload["seg"][0]["pal"], renderer.resolve_palette_id("Rainbow"))
         self.assertEqual(payload["seg"][0]["col"][0], "112233")
-
         self.assertTrue(renderer.send_state(payload))
         self.assertEqual(mock_urlopen.call_count, 4)
         post_request = mock_urlopen.call_args_list[3].args[0]
@@ -70,20 +68,17 @@ class TestLedsNode(unittest.TestCase):
     def test_handlers_update_state_and_build_controller_payload(self) -> None:
         node = leds.LedsNode()
         node._push_state = MagicMock()
-
         node._handle_leds_color({"color": "#112233"})
         node._handle_leds_brightness({"brightness": 300})
         node._handle_set_expression({"scores": {"sad": 0.1, "happy": 0.9}})
         node._handle_leds_effect({"effect": "rainbow"})
         node._handle_leds_animation({"animation": "party", "duration": 0.1})
         node._handle_external_beat({"beat": 0.8})
-
         self.assertEqual(node._state.primary_color, "#112233")
         self.assertEqual(node._state.brightness, 255)
         self.assertEqual(node._state.base_scene, "rainbow")
         self.assertEqual(node._state.temporary_scene, "beat")
         self.assertTrue(node._state.reactive_mode)
-
         payload = node._build_controller_payload(time.monotonic())
         self.assertEqual(payload["seg"][0]["fx"], node._renderer.resolve_effect_id("Strobe"))
         self.assertEqual(payload["seg"][0]["col"][0], "FF0000")
@@ -92,12 +87,9 @@ class TestLedsNode(unittest.TestCase):
     def test_animation_expires_and_returns_to_base_scene(self) -> None:
         node = leds.LedsNode()
         node._push_state = MagicMock()
-
         node._handle_leds_animation({"animation": "party", "duration": 0.05})
         self.assertEqual(node._state.active_scene(time.monotonic()), "party")
-
-        time.sleep(0.06)
-        now = time.monotonic()
+        now = time.monotonic() + 1.0
         self.assertTrue(node._state.expire_temporary_scene(now))
         self.assertIsNone(node._state.temporary_scene)
         self.assertEqual(node._state.active_scene(now), node._state.base_scene)
