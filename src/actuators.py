@@ -21,6 +21,7 @@ TOPIC_MOVE_EAR      = b"dynamo/commands/move-ear"
 TOPIC_MOVE_EYEBROW  = b"dynamo/commands/move-eyebrow"
 TOPIC_MOVE_MUZZLE   = b"dynamo/commands/move-muzzle"
 TOPIC_SET_POSE      = b"dynamo/commands/set-pose"
+TOPIC_SERVO_CONFIG  = b"dynamo/data/servo-config"
 SUBSCRIBED_TOPICS: list[bytes] = [TOPIC_MOVE_EAR, TOPIC_MOVE_EYEBROW, TOPIC_MOVE_MUZZLE, TOPIC_SET_POSE]
 
 class ServoId(str, Enum):
@@ -287,8 +288,18 @@ class ActuatorsNode:
     def _push_status(self, online: bool) -> None:
         self._push(TOPIC_STATUS, {"status": "online" if online else "offline", "node": "actuators"})
 
+    def _push_servo_config(self) -> None:
+        config: dict[str, Any] = {
+            "limits": {s.value: list(limits) for s, limits in SERVO_LIMITS.items()},
+            "defaults": {s.value: pos for s, pos in SERVO_DEFAULTS.items()},
+            "poses": {name: {s.value: pos for s, pos in macro.items()} for name, macro in POSE_MACROS.items()},
+        }
+        self._push(TOPIC_SERVO_CONFIG, config)
+        log.info("Published servo config to %s", TOPIC_SERVO_CONFIG.decode())
+
     def _status_loop(self) -> None:
         self._push_status(online=True)
+        self._push_servo_config()
         while self._running.is_set(): # Periodically push the node status heartbeat to the bridge
             time.sleep(STATUS_PUBLISH_INTERVAL)
             self._push_status(online=True)

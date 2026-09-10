@@ -202,7 +202,7 @@ class MQTTBridgeNode:
         if source != "cloud":
             self._publish_cloud(topic, None, raw=payload_bytes, retain=retain)
         if source != "local":
-            self._publish_local(topic, None, raw=payload_bytes)
+            self._publish_local(topic, None, raw=payload_bytes, retain=retain)
         if source != "zmq":
             self._zmq_pub(topic.encode(), payload_bytes)
         if retain:
