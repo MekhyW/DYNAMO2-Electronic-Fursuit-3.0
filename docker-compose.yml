@@ -1,0 +1,27 @@
+services:
+  whisperlive:
+    image: ghcr.io/collabora/whisperlive-openvino:latest
+    environment:
+      HF_TOKEN: ${huggingface_token}
+      HUGGINGFACE_HUB_TOKEN: ${huggingface_token}
+      WHISPER_CACHE_DIR: /root/.cache
+    volumes:
+      - ./cache:/root/.cache
+    container_name: whisperlive-openvino
+    command: ["python3", "run_server.py", "--port", "9090", "--backend", "openvino"]
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    # IMPORTANT FOR INTEL N100: To pass the iGPU through to Docker on Windows 11 (WSL2), you need to mount the DirectX device or the DRI device depending on your Docker Desktop setup. 
+    devices:
+      - /dev/dxg:/dev/dxg # WSL2 DirectML / GPU passthrough
+
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mqtt-broker
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+    restart: unless-stopped

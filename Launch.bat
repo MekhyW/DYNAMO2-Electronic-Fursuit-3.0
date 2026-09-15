@@ -17,6 +17,7 @@ start "" "C:\Users\LattePanda\Documents\GitHub\DYNAMO2-Eye-Graphics\Build\Eye-Gr
 
 :: Start DYNAMO.py
 cd "src"
+docker-compose up -d
 python DYNAMO-2.py || echo DYNAMO-2.py crashed
 
 :: Pause at the end

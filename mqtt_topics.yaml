@@ -301,7 +301,7 @@ topics:
           $ref: '#/common_payloads/TelegramUser'
 
 
-  # Topics used for retained lists
+  # Topics used for retained data
   data:
     - topic: dynamo/data/sound_effects
       description: Stream of available sound effects configured on the suit.
@@ -401,6 +401,18 @@ topics:
             timestamp:
               type: string
               format: date-time
+
+    - topic: dynamo/data/transcription
+      description: Transcription of the spoken audio.
+      payload:
+        type: object
+        properties:
+          text:
+            type: string
+            description: Transcription of the spoken audio.
+          timestamp:
+            type: string
+            format: date-time
   
 
   # Current states of the suit components
@@ -536,6 +548,19 @@ topics:
 
     - topic: dynamo/status/unity
       description: Heartbeat status published by the Unity node.
+      payload:
+        type: object
+        properties:
+          status:
+            type: string
+            enum: [online, offline]
+            description: Current node availability state.
+          node:
+            type: string
+            description: Name of the publishing node.
+
+    - topic: dynamo/status/microphone
+      description: Heartbeat status published by the microphone node.
       payload:
         type: object
         properties:
