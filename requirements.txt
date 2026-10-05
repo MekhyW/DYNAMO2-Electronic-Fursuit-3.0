@@ -6,3 +6,4 @@ pycaw
 git+https://github.com/MekhyW/telepota.git
 elevenlabs
 whisper-live
+sounddevice
