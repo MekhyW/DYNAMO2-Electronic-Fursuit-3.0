@@ -402,17 +402,82 @@ topics:
               type: string
               format: date-time
 
-    - topic: dynamo/data/transcription
-      description: Transcription of the spoken audio.
+    - topic: dynamo/data/lipsync
+      description: Per-frame lip-sync analysis result published by the microphone node at ~62 Hz (every HOP=256 samples at 16 kHz). Silent/idle frames are throttled (published every 6th frame).
+      payload:
+        type: object
+        properties:
+          timestamp:
+            type: number
+            description: Unix epoch timestamp of the analysis frame.
+          level:
+            type: number
+            minimum: 0.0
+            maximum: 1.0
+            description: Smoothed loudness level (log10-RMS mapped between VOL_MIN and VOL_MAX).
+          raw_level:
+            type: number
+            minimum: 0.0
+            maximum: 1.0
+            description: Instantaneous (un-smoothed) loudness level.
+          db:
+            type: number
+            description: Raw RMS level in dB.
+          phoneme:
+            type: [string, 'null']
+            description: Top phoneme including non-vowels ('-' breath/noise, 'S' sibilant, 'N' nasal). Null when quiet.
+          vowel:
+            type: [string, 'null']
+            description: Top phoneme only when it is a vowel (A/I/U/E/O); null otherwise.
+          fit:
+            type: number
+            minimum: 0.0
+            maximum: 1.0
+            description: Cosine similarity of the best phoneme match. Low values indicate consonants or unseen sounds.
+          weights:
+            type: object
+            description: Smoothed phoneme ratio map (phoneme name -> weight 0..1). Multiply by level for blendshape-style use.
+            additionalProperties:
+              type: number
+          speaking:
+            type: boolean
+            description: Whether the speaker is currently considered to be speaking.
+
+    - topic: dynamo/data/transcription_partial
+      description: Partial (in-progress) transcription segment published by the WhisperLive client before the utterance is committed.
       payload:
         type: object
         properties:
           text:
             type: string
-            description: Transcription of the spoken audio.
+            description: Partial transcription text.
           timestamp:
+            type: number
+            description: Unix epoch timestamp when the partial was received.
+          start:
+            type: [number, 'null']
+            description: Start time of the first segment within the audio stream (seconds).
+          end:
+            type: [number, 'null']
+            description: End time of the first segment within the audio stream (seconds).
+
+    - topic: dynamo/data/transcription
+      description: Committed (final) transcription of a spoken utterance published by the WhisperLive client.
+      payload:
+        type: object
+        properties:
+          text:
             type: string
-            format: date-time
+            description: Transcribed text of the completed utterance.
+          timestamp:
+            type: number
+            description: Unix epoch timestamp when the transcript was committed.
+          start:
+            type: [number, 'null']
+            description: Start time of the first segment within the audio stream (seconds).
+          end:
+            type: [number, 'null']
+            description: End time of the first segment within the audio stream (seconds).
   
 
   # Current states of the suit components
@@ -560,7 +625,7 @@ topics:
             description: Name of the publishing node.
 
     - topic: dynamo/status/microphone
-      description: Heartbeat status published by the microphone node.
+      description: Heartbeat status published by the microphone node every STATUS_PUBLISH_INTERVAL (5 s). An offline payload is sent once on shutdown.
       payload:
         type: object
         properties:
@@ -570,7 +635,31 @@ topics:
             description: Current node availability state.
           node:
             type: string
-            description: Name of the publishing node.
+            description: Name of the publishing node (always "microphone").
+          slow_path:
+            type: boolean
+            description: Whether the WhisperLive transcription connection is currently active. Only present when status is online.
+          profile:
+            type: array
+            items:
+              type: string
+            description: Ordered list of phoneme names in the loaded uLipSync profile. Only present when status is online.
+          adapt_offset:
+            type: number
+            description: L2 norm of the current channel-adapter MFCC offset (indicates how much mic-response correction has accumulated). Only present when status is online.
+          dropped_blocks:
+            type: object
+            description: Counts of audio blocks dropped due to full queues since startup. Only present when status is online.
+            properties:
+              fast:
+                type: integer
+                description: Blocks dropped from the lip-sync (fast) path.
+              slow:
+                type: integer
+                description: Blocks dropped from the WhisperLive (slow) path.
+          audio_xruns:
+            type: integer
+            description: Cumulative number of PortAudio under/overruns since startup. Only present when status is online.
 
 
   # Other topics
