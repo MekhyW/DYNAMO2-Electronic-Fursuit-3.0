@@ -192,15 +192,12 @@ class MQTTBridgeNode:
             self._fan_out(topic_str, payload_bytes, "zmq")
 
     def _fan_out(self, topic: str, payload_bytes: bytes, source: str) -> None:
-        """Publish a message to all transports except where it came from ("cloud", "local" or "zmq")"""
         try:
             json.loads(payload_bytes)
         except json.JSONDecodeError:
             log.warning("Non-JSON message on %s from %s — dropping", topic, source)
             return
         retain = topic.startswith("dynamo/data/") # Topics whose last value should be retained by HiveMQ so mobile clients always receive the current list immediately on subscribe.
-        if source != "cloud":
-            self._publish_cloud(topic, None, raw=payload_bytes, retain=retain)
         if source != "local":
             self._publish_local(topic, None, raw=payload_bytes, retain=retain)
         if source != "zmq":
