@@ -186,14 +186,13 @@ class TestMicrophoneNodeHelpers(unittest.TestCase):
     def test_on_transcript_ignores_blank_text_and_includes_first_segment_times(self):
         node = self._node()
         node._push = MagicMock()
-        node._on_transcript(microphone.TOPIC_TRANSCRIPTION, "  hello ", [{"start": 1.2, "end": 2.3}, {"start": 9}])
+        node._on_transcript(microphone.TOPIC_TRANSCRIPTION, "  hello ")
         node._push.assert_called_once()
         topic, payload = node._push.call_args.args
         self.assertEqual(topic, microphone.TOPIC_TRANSCRIPTION)
         self.assertEqual(payload["text"], "hello")
-        self.assertEqual((payload["start"], payload["end"]), (1.2, 2.3))
         node._push.reset_mock()
-        node._on_transcript(microphone.TOPIC_TRANSCRIPTION, "  ", [])
+        node._on_transcript(microphone.TOPIC_TRANSCRIPTION, "  ")
         node._push.assert_not_called()
 
     def test_publish_frame_throttles_quiet_frames(self):

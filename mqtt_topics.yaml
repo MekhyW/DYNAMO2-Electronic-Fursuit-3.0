@@ -454,12 +454,6 @@ topics:
           timestamp:
             type: number
             description: Unix epoch timestamp when the partial was received.
-          start:
-            type: [number, 'null']
-            description: Start time of the first segment within the audio stream (seconds).
-          end:
-            type: [number, 'null']
-            description: End time of the first segment within the audio stream (seconds).
 
     - topic: dynamo/data/transcription
       description: Committed (final) transcription of a spoken utterance published by the WhisperLive client.
@@ -472,12 +466,6 @@ topics:
           timestamp:
             type: number
             description: Unix epoch timestamp when the transcript was committed.
-          start:
-            type: [number, 'null']
-            description: Start time of the first segment within the audio stream (seconds).
-          end:
-            type: [number, 'null']
-            description: End time of the first segment within the audio stream (seconds).
   
 
   # Current states of the suit components
@@ -532,31 +520,6 @@ topics:
 
   # Camera streams and vision analysis
   camera:
-    - topic: dynamo/camera/status
-      description: Camera vision node heartbeat and runtime information.
-      payload:
-        type: object
-        properties:
-          status:
-            type: string
-            enum: [online, offline]
-            description: Current camera node availability state.
-          node:
-            type: string
-            description: Name of the publishing node (always "vision").
-          camera:
-            type: string
-            description: Camera device index or source used by the node.
-          frames:
-            type: integer
-            description: Number of frames processed since startup.
-          fps:
-            type: number
-            description: Average processed frames per second while online.
-          error:
-            type: string
-            description: Most recent camera or inference error, when present.
-
     - topic: dynamo/camera/raw
       description: JPEG-encoded frame captured from the external camera.
       payload:
@@ -743,14 +706,6 @@ topics:
           node:
             type: string
             description: Name of the publishing node (always "microphone").
-          slow_path:
-            type: boolean
-            description: Whether the WhisperLive transcription connection is currently active. Only present when status is online.
-          profile:
-            type: array
-            items:
-              type: string
-            description: Ordered list of phoneme names in the loaded uLipSync profile. Only present when status is online.
           adapt_offset:
             type: number
             description: L2 norm of the current channel-adapter MFCC offset (indicates how much mic-response correction has accumulated). Only present when status is online.
@@ -767,6 +722,31 @@ topics:
           audio_xruns:
             type: integer
             description: Cumulative number of PortAudio under/overruns since startup. Only present when status is online.
+
+    - topic: dynamo/status/vision
+      description: Camera vision node heartbeat and runtime information.
+      payload:
+        type: object
+        properties:
+          status:
+            type: string
+            enum: [online, offline]
+            description: Current camera node availability state.
+          node:
+            type: string
+            description: Name of the publishing node (always "vision").
+          camera:
+            type: string
+            description: Camera device index or source used by the node.
+          frames:
+            type: integer
+            description: Number of frames processed since startup.
+          fps:
+            type: number
+            description: Average processed frames per second while online.
+          error:
+            type: string
+            description: Most recent camera or inference error, when present.
 
 
   # Other topics

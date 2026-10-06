@@ -377,8 +377,8 @@ class MicrophoneNode:
             closed = threading.Event()
             client = StreamingTranscriptionClient(
                 WHISPER_HOST, WHISPER_PORT, model=WHISPER_MODEL, ready_timeout=10.0,
-                on_partial_transcript=lambda text, segs: self._on_transcript(TOPIC_TRANSCRIPTION_PARTIAL, text, segs),
-                on_committed_transcript=lambda text, segs: self._on_transcript(TOPIC_TRANSCRIPTION, text, segs),
+                on_partial_transcript=lambda text, segs: self._on_transcript(TOPIC_TRANSCRIPTION_PARTIAL, text),
+                on_committed_transcript=lambda text, segs: self._on_transcript(TOPIC_TRANSCRIPTION, text),
                 on_close=closed.set, on_error=lambda exc: log.warning("WhisperLive error: %s", exc))
             try:
                 client.connect()
@@ -414,13 +414,11 @@ class MicrophoneNode:
                 log.warning("WhisperLive connection lost; reconnecting")
                 self._stopped.wait(2.0)
 
-    def _on_transcript(self, topic: bytes, text: str, segments: list[dict[str, Any]]) -> None:
+    def _on_transcript(self, topic: bytes, text: str) -> None:
         text = (text or "").strip()
         if not text:
             return
         payload: dict[str, Any] = {"text": text, "timestamp": time.time()}
-        if segments:
-            payload["start"], payload["end"] = segments[0].get("start"), segments[0].get("end")
         if topic == TOPIC_TRANSCRIPTION:
             log.info("Transcribed: %s", text)
         self._push(topic, payload)
@@ -470,9 +468,8 @@ class MicrophoneNode:
 
     def _status_loop(self) -> None:
         while not self._stopped.is_set():
-            self._push(TOPIC_STATUS, {"status": "online", "node": "microphone",
-                                      "slow_path": self._slow_connected.is_set(),
-                                      "profile": self._analyzer.profile.names,
+            self._push(TOPIC_STATUS, {"status": "online",
+                                      "node": "microphone",
                                       "adapt_offset": round(self._analyzer.offset_norm, 1),
                                       "dropped_blocks": {"fast": self._dropped[0], "slow": self._dropped[1]},
                                       "audio_xruns": self._capture.xruns})

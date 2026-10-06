@@ -18,7 +18,7 @@ ZMQ_SUB_ADDRESS = "tcp://localhost:5555"
 ZMQ_PUSH_ADDRESS = "tcp://localhost:5556"
 STATUS_PUBLISH_INTERVAL = 5.0
 
-TOPIC_STATUS = b"dynamo/camera/status"
+TOPIC_STATUS = b"dynamo/status/vision"
 TOPIC_RAW = b"dynamo/camera/raw"
 TOPIC_DETECTION = b"dynamo/camera/detection"
 TOPIC_LIGHTING = b"dynamo/camera/lighting"
