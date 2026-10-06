@@ -209,16 +209,20 @@ def get_disk_info() -> dict[str, Any]:
 def get_system_volume() -> float:
     comtypes.CoInitialize()
     devices = AudioUtilities.GetSpeakers()
-    interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-    volume = cast(interface, POINTER(IAudioEndpointVolume))
+    volume = _get_endpoint_volume(devices)
     return float(volume.GetMasterVolumeLevelScalar())
 
 def set_system_volume(volume_level: float) -> None:
     comtypes.CoInitialize()
     devices = AudioUtilities.GetSpeakers()
-    interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-    volume = cast(interface, POINTER(IAudioEndpointVolume))
+    volume = _get_endpoint_volume(devices)
     volume.SetMasterVolumeLevelScalar(_clamp_float(volume_level), None)
+
+def _get_endpoint_volume(devices: Any) -> Any:
+    if hasattr(devices, "Activate"): # old pycaw releases
+        interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+        return cast(interface, POINTER(IAudioEndpointVolume))
+    return devices.EndpointVolume
 
 def refresh_sound_devices() -> list[dict[str, str]]:
     subprocess.run(["SoundVolumeView.exe", "/sjson", "sound_volume.json"], shell=True, check=False)

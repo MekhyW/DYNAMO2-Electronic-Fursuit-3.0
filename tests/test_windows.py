@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import MagicMock, patch, mock_open
 import json
 import zmq
+from types import SimpleNamespace
 from pathlib import Path
 import sys
 ROOT_DIR = Path(__file__).parent.parent
@@ -78,6 +79,15 @@ class TestWindowsNode(unittest.TestCase):
             mock_volume.SetMasterVolumeLevelScalar.reset_mock()
             windows.set_system_volume(-0.5)
             mock_volume.SetMasterVolumeLevelScalar.assert_called_once_with(0.0, None)
+
+    @patch("src.windows.AudioUtilities")
+    @patch("src.windows.comtypes")
+    def test_system_volume_with_current_pycaw_audio_device(self, mock_comtypes, mock_audio):
+        mock_volume = MagicMock()
+        mock_volume.GetMasterVolumeLevelScalar.return_value = 0.42
+        mock_audio.GetSpeakers.return_value = SimpleNamespace(EndpointVolume=mock_volume)
+        self.assertEqual(windows.get_system_volume(), 0.42)
+        mock_volume.GetMasterVolumeLevelScalar.assert_called_once_with()
 
     @patch("src.windows.subprocess.run")
     @patch("src.windows.os.path.exists")
