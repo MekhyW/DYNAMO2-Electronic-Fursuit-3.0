@@ -7,3 +7,5 @@ git+https://github.com/MekhyW/telepota.git
 elevenlabs
 whisper-live
 sounddevice
+opencv-python
+ultralytics[export-openvino]

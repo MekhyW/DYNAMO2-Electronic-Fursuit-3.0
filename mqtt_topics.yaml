@@ -530,6 +530,113 @@ topics:
             description: Timestamp of the event.
 
 
+  # Camera streams and vision analysis
+  camera:
+    - topic: dynamo/camera/status
+      description: Camera vision node heartbeat and runtime information.
+      payload:
+        type: object
+        properties:
+          status:
+            type: string
+            enum: [online, offline]
+            description: Current camera node availability state.
+          node:
+            type: string
+            description: Name of the publishing node (always "vision").
+          camera:
+            type: string
+            description: Camera device index or source used by the node.
+          frames:
+            type: integer
+            description: Number of frames processed since startup.
+          fps:
+            type: number
+            description: Average processed frames per second while online.
+          error:
+            type: string
+            description: Most recent camera or inference error, when present.
+
+    - topic: dynamo/camera/raw
+      description: JPEG-encoded frame captured from the external camera.
+      payload:
+        type: object
+        properties:
+          timestamp:
+            type: number
+            description: Unix epoch timestamp of the captured frame.
+          width:
+            type: integer
+            description: Frame width in pixels.
+          height:
+            type: integer
+            description: Frame height in pixels.
+          data:
+            type: string
+            description: Base64-encoded JPEG bytes.
+
+    - topic: dynamo/camera/detection
+      description: Per-frame fursuit and human detections with persistent ByteTrack IDs.
+      payload:
+        type: object
+        properties:
+          timestamp:
+            type: number
+            description: Unix epoch timestamp of the inference frame.
+          frame:
+            type: integer
+            description: Monotonic frame number since node startup.
+          backend:
+            type: string
+            enum: [openvino]
+            description: Inference backend used by the detector.
+          detections:
+            type: array
+            items:
+              type: object
+              properties:
+                bbox:
+                  type: array
+                  minItems: 4
+                  maxItems: 4
+                  items:
+                    type: number
+                  description: Pixel coordinates [x1, y1, x2, y2].
+                confidence:
+                  type: [number, 'null']
+                  minimum: 0.0
+                  maximum: 1.0
+                  description: Detector confidence score.
+                class_id:
+                  type: integer
+                  description: Model class index.
+                label:
+                  type: string
+                  description: Human-readable model class label.
+                track_id:
+                  type: [integer, 'null']
+                  description: Persistent ByteTrack identifier, when assigned.
+
+    - topic: dynamo/camera/lighting
+      description: Per-frame estimate of environmental lighting from image luminance.
+      payload:
+        type: object
+        properties:
+          timestamp:
+            type: number
+            description: Unix epoch timestamp of the analyzed frame.
+          brightness:
+            type: number
+            minimum: 0.0
+            maximum: 1.0
+            description: Normalized perceptual scene brightness.
+          mean_luminance:
+            type: number
+            minimum: 0.0
+            maximum: 1.0
+            description: Normalized mean frame luminance.
+
+
   # Current status of nodes
   status:
     - topic: dynamo/status/actuators

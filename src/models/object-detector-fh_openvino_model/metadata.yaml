@@ -1,0 +1,25 @@
+description: Ultralytics YOLO26s model trained on /datasets/fursuits-and-humans-cbdfc807/data.yaml
+author: Ultralytics
+date: '2026-10-06T02:59:24.042663-03:00'
+version: 8.4.173
+license: AGPL-3.0 License (https://ultralytics.com/license)
+docs: https://docs.ultralytics.com
+stride: 32
+task: detect
+head: Detect
+batch: 1
+imgsz:
+- 640
+- 640
+names:
+  0: fursuit
+  1: human
+args:
+  data: null
+  batch: 1
+  fraction: 1.0
+  quantize: null
+  nms: null
+  dynamic: false
+channels: 3
+end2end: false
