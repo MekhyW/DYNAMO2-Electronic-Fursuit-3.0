@@ -71,7 +71,7 @@ class TestMQTTBridge(unittest.TestCase):
         # 1. Cloud message -> local and ZMQ
         valid_payload = b'{"status": "ok"}'
         node._fan_out("dynamo/test", valid_payload, "cloud")
-        node._publish_local.assert_called_once_with("dynamo/test", None, raw=valid_payload)
+        node._publish_local.assert_called_once_with("dynamo/test", None, raw=valid_payload, retain=False)
         node._zmq_pub.assert_called_once_with(b"dynamo/test", valid_payload)
         node._publish_cloud.assert_not_called()
         node._publish_local.reset_mock()
@@ -88,8 +88,15 @@ class TestMQTTBridge(unittest.TestCase):
         # 3. ZMQ message -> cloud and local
         node._fan_out("dynamo/test", valid_payload, "zmq")
         node._publish_cloud.assert_called_once_with("dynamo/test", None, raw=valid_payload, retain=False)
-        node._publish_local.assert_called_once_with("dynamo/test", None, raw=valid_payload)
+        node._publish_local.assert_called_once_with("dynamo/test", None, raw=valid_payload, retain=False)
         node._zmq_pub.assert_not_called()
+        node._publish_local.reset_mock()
+        node._zmq_pub.reset_mock()
+        node._publish_cloud.reset_mock()
+        # 4. Retained topic check (dynamo/data/*)
+        node._fan_out("dynamo/data/test", valid_payload, "zmq")
+        node._publish_cloud.assert_called_once_with("dynamo/data/test", None, raw=valid_payload, retain=True)
+        node._publish_local.assert_called_once_with("dynamo/data/test", None, raw=valid_payload, retain=True)
 
     def test_publish_functions_respect_connection_status(self):
         node = MQTTBridgeNode(self.config)
