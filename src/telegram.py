@@ -92,6 +92,7 @@ class TelegramNode:
         except Exception as e:
             log.warning("Failed to patch telepot SSL pools: %s", e)
         self._bot = telepot.Bot(self._bot_token)
+        self._bot.deleteWebhook()
         log.info("Telegram Bot instance initialized.")
         self._setup_zmq()
         threading.Thread(target=self._status_loop, daemon=True, name="telegram-status-loop").start()
