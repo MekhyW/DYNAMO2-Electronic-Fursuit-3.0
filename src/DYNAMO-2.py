@@ -19,7 +19,7 @@ if str(SRC_DIR) not in sys.path:
 LOG_FORMAT = "%(asctime)s [%(levelname)s] dynamo-supervisor: %(message)s"
 log = logging.getLogger("dynamo-supervisor")
 
-NODES = ["mqttbridge", "windows", "unity", "leds", "actuators", "microphone", "vision", "voicemod", "audio_sfx", "handheld", "telegram"]
+NODES = ["mqttbridge", "windows", "unity", "leds", "actuators", "microphone", "desktop_audio", "vision", "voicemod", "audio_sfx", "handheld", "telegram"]
 DEFAULT_RESTART_DELAY = 2.0
 MAX_RESTART_DELAY = 30.0
 MONITOR_INTERVAL = 0.25

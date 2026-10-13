@@ -402,6 +402,37 @@ topics:
               type: string
               format: date-time
 
+    - topic: dynamo/data/fft
+      description: Per-frame FFT analysis result published by the audio analyser node.
+      payload:
+        type: object
+        properties:
+          bands:
+            type: array
+            description: Normalised per-band energies (0.0-1.0). Any length is accepted; leds.py linearly resamples them to the 16 GEQ bins WLED expects.
+            items:
+              type: number
+              minimum: 0.0
+              maximum: 1.0
+          energy:
+            type: number
+            minimum: 0.0
+            maximum: 1.0
+            description: Overall normalised volume (0.0-1.0). Falls back to the mean of bands when absent.
+          magnitude:
+            type: number
+            minimum: 0.0
+            maximum: 1.0
+            description: Normalised dominant-peak magnitude (0.0-1.0). Optional.
+          major_peak:
+            type: number
+            description: Dominant-peak frequency in Hz. Optional.
+          peak:
+            type: [boolean, integer]
+            description: >
+              Set to true / 1 when a beat or transient peak is detected.
+              Maps to samplePeak in the WLED Audio Sync packet.
+
     - topic: dynamo/data/lipsync
       description: Per-frame lip-sync analysis result published by the microphone node at ~62 Hz (every HOP=256 samples at 16 kHz). Silent/idle frames are throttled (published every 6th frame).
       payload:
@@ -747,6 +778,31 @@ topics:
           error:
             type: string
             description: Most recent camera or inference error, when present.
+
+    - topic: dynamo/status/leds
+      description: LED status
+      payload:
+        type: object
+        properties:
+          status:
+            type: string
+            enum: [online, offline]
+            description: Current status of the LED system.
+          node:
+            type: string
+            description: Name of the publishing node.
+          current_scene:
+            type: string
+            description: The currently active scene.
+          expression:
+            type: string
+            description: The currently active expression.
+          brightness:
+            type: integer
+            description: Brightness level of the LEDs.
+          primary_color:
+            type: string
+            description: Primary color name or hex code.
 
 
   # Other topics

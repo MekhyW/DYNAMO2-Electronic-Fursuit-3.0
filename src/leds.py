@@ -4,6 +4,8 @@ import json
 import logging
 import os
 import signal
+import socket
+import struct
 import threading
 import time
 import urllib.error
@@ -25,8 +27,14 @@ HTTP_RETRIES: int = 2
 ANIMATION_DEFAULT_DURATION: float = 2.0
 DEFAULT_LED_COUNT: int = 721
 
-TOPIC_STATUS = b"dynamo/leds/status"
-TOPIC_STATUS_LEGACY = b"dynamo/status/leds"
+WLED_AUDIO_SYNC_MCAST_ADDR: str = os.getenv("WLED_AUDIO_SYNC_ADDR", "239.0.0.1")
+WLED_AUDIO_SYNC_PORT: int = int(os.getenv("WLED_AUDIO_SYNC_PORT", "11988"))
+_WLED_BANDS: int = 16 # Number of GEQ bands in the WLED v2 packet – do NOT change without also updating the struct format string below.
+_WLED_PACKET_FMT: str = "<6s2sffBB16sHff"
+assert struct.calcsize(_WLED_PACKET_FMT) == 44, "WLED packet format must be exactly 44 bytes"
+
+
+TOPIC_STATUS = b"dynamo/status/leds"
 TOPIC_LED_STATE = b"dynamo/state/leds"
 TOPIC_LEDS_TOGGLE = b"dynamo/commands/leds-toggle"
 TOPIC_LEDS_BRIGHTNESS = b"dynamo/commands/leds-brightness"
@@ -35,13 +43,8 @@ TOPIC_LEDS_EFFECT = b"dynamo/commands/leds-effect"
 TOPIC_LEDS_ANIMATION = b"dynamo/commands/leds-animation"
 TOPIC_SET_EXPRESSION = b"dynamo/commands/set-expression"
 TOPIC_EXPRESSION = b"dynamo/expression"
-TOPIC_INTERNAL_FFT = b"dynamo/microphone/internal/fft"
-TOPIC_EXTERNAL_FFT = b"dynamo/microphone/external/fft"
-TOPIC_INTERNAL_AED = b"dynamo/microphone/internal/aed"
-TOPIC_EXTERNAL_AED = b"dynamo/microphone/external/aed"
-TOPIC_EXTERNAL_BEAT = b"dynamo/microphone/external/beat-detect"
-TOPIC_EXTERNAL_MUSIC = b"dynamo/microphone/external/music-detect"
-SUBSCRIBED_TOPICS: list[bytes] = [TOPIC_LEDS_TOGGLE, TOPIC_LEDS_BRIGHTNESS, TOPIC_LEDS_COLOR, TOPIC_LEDS_EFFECT, TOPIC_LEDS_ANIMATION, TOPIC_SET_EXPRESSION, TOPIC_EXPRESSION, TOPIC_INTERNAL_FFT, TOPIC_EXTERNAL_FFT, TOPIC_INTERNAL_AED, TOPIC_EXTERNAL_AED, TOPIC_EXTERNAL_BEAT, TOPIC_EXTERNAL_MUSIC,]
+TOPIC_FFT = b"dynamo/data/fft"
+SUBSCRIBED_TOPICS: list[bytes] = [TOPIC_LEDS_TOGGLE, TOPIC_LEDS_BRIGHTNESS, TOPIC_LEDS_COLOR, TOPIC_LEDS_EFFECT, TOPIC_LEDS_ANIMATION, TOPIC_SET_EXPRESSION, TOPIC_EXPRESSION, TOPIC_FFT, ]
 
 NAMED_COLORS: dict[str, tuple[int, int, int]] = {
     "black": (0, 0, 0),
@@ -180,14 +183,6 @@ SCENE_PRESETS: dict[str, dict[str, Any]] = {
         "transition": 2,
         "colors": ("primary", "accent", "highlight"),
     },
-    "fft": {
-        "effect": "Pulse",
-        "palette": "Primary Color",
-        "speed": 160,
-        "intensity": 180,
-        "transition": 0,
-        "colors": ("primary", "accent", "highlight"),
-    },
     "speech": {
         "effect": "Sparkle",
         "palette": "Based on Primary",
@@ -195,22 +190,6 @@ SCENE_PRESETS: dict[str, dict[str, Any]] = {
         "intensity": 150,
         "transition": 0,
         "colors": ("primary", "highlight", "accent"),
-    },
-    "beat": {
-        "effect": "Strobe",
-        "palette": "Red & Blue",
-        "speed": 255,
-        "intensity": 255,
-        "transition": 0,
-        "colors": ("red", "accent", "highlight"),
-    },
-    "music": {
-        "effect": "Rainbow",
-        "palette": "Rainbow",
-        "speed": 220,
-        "intensity": 140,
-        "transition": 0,
-        "colors": ("primary", "accent", "highlight"),
     },
 }
 
@@ -327,8 +306,6 @@ class LedsState:
     controller_name: str | None = None
     led_count: int = DEFAULT_LED_COUNT
     last_audio_energy: float | None = None
-    last_beat_strength: float | None = None
-    reactive_mode: bool = False
     _lock: threading.RLock = field(default_factory=threading.RLock, repr=False)
 
     def active_scene(self, now: float) -> str:
@@ -376,8 +353,6 @@ class LedsState:
                 "controller_name": self.controller_name,
                 "led_count": self.led_count,
                 "last_audio_energy": self.last_audio_energy,
-                "last_beat_strength": self.last_beat_strength,
-                "reactive_mode": self.reactive_mode,
             }
 
 
@@ -562,6 +537,81 @@ class WLEDRenderer:
         return None
 
 
+class WLEDAudioSync:
+    """Encodes and multicasts WLED Audio Sync v2 (44-byte packed) packets."""
+    _HEADER = b"00002\x00"
+    def __init__(self, addr: str = WLED_AUDIO_SYNC_MCAST_ADDR, port: int = WLED_AUDIO_SYNC_PORT, ttl: int = 1) -> None:
+        self._addr = addr
+        self._port = port
+        self._sock: socket.socket | None = None
+        self._ttl = ttl
+        self._frame: int = 0  # rolling 0..255 frame counter
+        self._setup()
+
+    def _setup(self) -> None:
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, self._ttl)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self._sock = sock
+            log.info("WLED Audio Sync UDP socket ready → %s:%d (TTL=%d)", self._addr, self._port, self._ttl)
+        except OSError as exc:
+            log.error("WLEDAudioSync: could not create UDP socket: %s", exc)
+            self._sock = None
+
+    def send(self, *, bands: list[float], volume: float, magnitude: float = 0.0, major_peak_hz: float = 0.0, peak: bool = False) -> bool:
+        """Encode one v2 packet and send it."""
+        # Packet layout (44 bytes, little-endian, packed):
+        #   [0..5]   char[6]   header       "00002\0"
+        #   [6..7]   uint8[2]  reserved1    0x00 0x00
+        #   [8..11]  float32   sampleRaw    instantaneous volume  0..255
+        #   [12..15] float32   sampleSmth   smoothed volume        0..255
+        #   [16]     uint8     samplePeak   1 if peak detected, else 0
+        #   [17]     uint8     frameCounter rolling 0..255 counter
+        #   [18..33] uint8[16] fftResult    16 GEQ band bytes      0..255
+        #   [34..35] uint16    zeroCrossing zero-crossing count (approximated)
+        #   [36..39] float32   FFT_Magnitude dominant peak amplitude 0..255
+        #   [40..43] float32   FFT_MajorPeak dominant peak frequency in Hz
+        if self._sock is None:
+            return False
+        fft16 = self._resample_bands(bands, _WLED_BANDS)
+        fft_bytes = bytes(int(_clamp(v, 0.0, 1.0) * 255) for v in fft16)
+        raw_wire = float(_clamp(volume, 0.0, 1.0) * 255.0)
+        smth_wire = raw_wire          # we have no separate smoothed value
+        mag_wire = float(_clamp(magnitude, 0.0, 1.0) * 255.0)
+        frame_byte = self._frame & 0xFF
+        self._frame = (self._frame + 1) & 0xFF
+        packet = struct.pack(_WLED_PACKET_FMT, self._HEADER, b"\x00\x00", raw_wire, smth_wire, int(peak), frame_byte, fft_bytes, 0, mag_wire, major_peak_hz)
+        try:
+            self._sock.sendto(packet, (self._addr, self._port))
+            return True
+        except OSError as exc:
+            log.debug("WLEDAudioSync send error: %s", exc)
+            return False
+
+    def close(self) -> None:
+        if self._sock is not None:
+            self._sock.close()
+            self._sock = None
+
+    @staticmethod
+    def _resample_bands(src: list[float], n_out: int) -> list[float]:
+        """Linear-interpolation resample of ``src`` to exactly ``n_out`` bins."""
+        n_in = len(src)
+        if n_in == 0:
+            return [0.0] * n_out
+        if n_in == n_out:
+            return list(src)
+        out: list[float] = []
+        for i in range(n_out):
+            pos = i * (n_in - 1) / max(n_out - 1, 1)
+            lo = int(pos)
+            hi = min(lo + 1, n_in - 1)
+            t = pos - lo
+            out.append(src[lo] * (1.0 - t) + src[hi] * t)
+        return out
+
+
 class LedsNode:
     def __init__(self) -> None:
         self._state = LedsState(
@@ -577,6 +627,7 @@ class LedsNode:
         self._zmq_push: zmq.Socket | None = None
         self._theme = ThemeManager(self._state.primary_color)
         self._renderer = WLEDRenderer(self._state.led_count)
+        self._audio_sync = WLEDAudioSync()
         self._last_controller_signature: str | None = None
         self._handlers: dict[bytes, Callable[[dict[str, Any]], None]] = {
             TOPIC_LEDS_TOGGLE: self._handle_leds_toggle,
@@ -586,12 +637,7 @@ class LedsNode:
             TOPIC_LEDS_ANIMATION: self._handle_leds_animation,
             TOPIC_SET_EXPRESSION: self._handle_set_expression,
             TOPIC_EXPRESSION: self._handle_expression_scores,
-            TOPIC_INTERNAL_FFT: self._handle_internal_fft,
-            TOPIC_EXTERNAL_FFT: self._handle_external_fft,
-            TOPIC_INTERNAL_AED: self._handle_internal_aed,
-            TOPIC_EXTERNAL_AED: self._handle_external_aed,
-            TOPIC_EXTERNAL_BEAT: self._handle_external_beat,
-            TOPIC_EXTERNAL_MUSIC: self._handle_external_music,
+            TOPIC_FFT: self._handle_fft,
         }
 
     def start(self) -> None:
@@ -728,10 +774,8 @@ class LedsNode:
             "brightness": self._state.brightness,
             "scene": self._state.active_scene(now),
             "primary_color": self._state.primary_color,
-            "reactive_mode": self._state.reactive_mode,
         }
         self._push(TOPIC_STATUS, payload)
-        self._push(TOPIC_STATUS_LEGACY, payload)
 
     def _set_scene(self, scene: str, reason: str) -> None:
         normalized = _normalize_key(scene) or "idle"
@@ -743,8 +787,6 @@ class LedsNode:
         enabled = _normalize_bool(payload.get("enabled"), default=self._state.enabled)
         with self._state._lock:
             self._state.enabled = enabled
-            if not enabled:
-                self._state.reactive_mode = False
         log.info("leds-toggle: enabled=%s", enabled)
         self._push_state("toggle")
 
@@ -807,82 +849,33 @@ class LedsNode:
         expression = max(payload, key=lambda key: payload[key])
         self._set_scene(str(expression), "expression-scores")
 
-    def _handle_internal_fft(self, payload: dict[str, Any]) -> None:
-        self._handle_fft(payload, source="internal")
-
-    def _handle_external_fft(self, payload: dict[str, Any]) -> None:
-        self._handle_fft(payload, source="external")
-
-    def _handle_fft(self, payload: dict[str, Any], source: str) -> None:
-        energy = self._extract_audio_metric(payload, "energy")
-        bands = payload.get("bands")
-        if isinstance(bands, list):
-            values = [float(value) for value in bands if isinstance(value, (int, float))]
-            if values:
-                energy = sum(values) / len(values)
-        with self._state._lock:
-            self._state.last_audio_energy = energy
-            if energy is not None and energy > 0.0:
-                self._state.reactive_mode = True
-        duration = 0.2 + min(0.45, (energy or 0.0) * 0.45)
-        self._state.set_temporary_scene("fft", time.monotonic() + duration)
-        log.info("%s-fft: energy=%s", source, energy)
-        self._push_state(f"{source}-fft")
-
-    def _handle_internal_aed(self, payload: dict[str, Any]) -> None:
-        self._handle_audio_event(payload, source="internal")
-
-    def _handle_external_aed(self, payload: dict[str, Any]) -> None:
-        self._handle_audio_event(payload, source="external")
-
-    def _handle_audio_event(self, payload: dict[str, Any], source: str) -> None:
-        label = _normalize_text(payload.get("event") or payload.get("label") or payload.get("type")) or "speech_started"
-        confidence = payload.get("confidence")
-        intensity = _clamp(float(confidence), 0.2, 1.0) if isinstance(confidence, (int, float)) else 0.75
-        with self._state._lock:
-            self._state.reactive_mode = True
-        if "speech" in label.lower():
-            scene = "speech"
+    def _handle_fft(self, payload: dict[str, Any]) -> None:
+        """Forward FFT data from ZeroMQ to WLED via the Audio Sync UDP multicast protocol."""
+        bands_raw = payload.get("bands")
+        bands: list[float] = []
+        if isinstance(bands_raw, list):
+            bands = [float(v) for v in bands_raw if isinstance(v, (int, float))]
+        energy_raw = payload.get("energy")
+        if isinstance(energy_raw, (int, float)):
+            energy = float(energy_raw)
+        elif bands:
+            energy = sum(bands) / len(bands)
         else:
-            scene = "fft" if intensity < 0.7 else "party"
-        duration = 0.35 + (0.5 * intensity)
-        self._state.set_temporary_scene(scene, time.monotonic() + duration)
-        log.info("%s-aed: label=%s confidence=%s", source, label, confidence)
-        self._push_state(f"{source}-aed")
-
-    def _handle_external_beat(self, payload: dict[str, Any]) -> None:
-        beat = self._extract_audio_metric(payload, "beat")
+            energy = 0.0
+        magnitude_raw = payload.get("magnitude")
+        magnitude = float(magnitude_raw) if isinstance(magnitude_raw, (int, float)) else energy
+        major_peak_raw = payload.get("major_peak")
+        major_peak_hz = float(major_peak_raw) if isinstance(major_peak_raw, (int, float)) else 0.0
+        peak_flag = bool(payload.get("peak", False))
         with self._state._lock:
-            self._state.last_beat_strength = beat
-            self._state.reactive_mode = True
-        duration = 0.18 + min(0.25, (beat or 0.0) * 0.25)
-        self._state.set_temporary_scene("beat", time.monotonic() + duration)
-        log.info("external-beat: strength=%s", beat)
-        self._push_state("beat")
-
-    def _handle_external_music(self, payload: dict[str, Any]) -> None:
-        detected = _normalize_bool(payload.get("detected"), default=True)
-        with self._state._lock:
-            self._state.reactive_mode = detected
-        if detected:
-            self._state.set_temporary_scene("music", time.monotonic() + 0.5)
-        log.info("external-music: detected=%s", detected)
-        self._push_state("music")
-
-    def _extract_audio_metric(self, payload: dict[str, Any], key: str) -> float | None:
-        value = payload.get(key)
-        if isinstance(value, (int, float)):
-            return float(value)
-        if isinstance(value, dict):
-            for candidate in ("value", "level", "strength", "avg", "rms", "amplitude"):
-                nested = value.get(candidate)
-                if isinstance(nested, (int, float)):
-                    return float(nested)
-        return None
+            self._state.last_audio_energy = energy if energy > 0.0 else None
+        sent = self._audio_sync.send(bands=bands, volume=energy, magnitude=magnitude, major_peak_hz=major_peak_hz, peak=peak_flag)
+        log.debug("fft: energy=%.3f bands=%d magnitude=%.3f major_peak=%.1f Hz peak=%s udp=%s", energy, len(bands), magnitude, major_peak_hz, peak_flag, sent)
 
     def _teardown(self) -> None:
         log.info("Tearing down leds node...")
         self._push_status(online=False)
+        self._audio_sync.close()
         if self._zmq_sub is not None and not self._zmq_sub.closed:
             self._zmq_sub.close(linger=0)
         if self._zmq_push is not None and not self._zmq_push.closed:
