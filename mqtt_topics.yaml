@@ -118,21 +118,6 @@ topics:
         user:
           $ref: '#/common_payloads/TelegramUser'
 
-    - topic: dynamo/commands/hotword-detection-toggle
-      description: Toggles wake word detection listener on the suit.
-      payload:
-        enabled:
-          type: boolean
-          description: Target state of hotword detection.
-        user:
-          $ref: '#/common_payloads/TelegramUser'
-
-    - topic: dynamo/commands/hotword-trigger
-      description: Manually triggers the wake word event.
-      payload:
-        user:
-          $ref: '#/common_payloads/TelegramUser'
-
     - topic: dynamo/commands/text-to-speech
       description: Triggers TTS synthesis and speech playback on the device.
       payload:
@@ -152,11 +137,11 @@ topics:
           $ref: '#/common_payloads/TelegramUser'
 
     - topic: dynamo/commands/face-expression-tracking-toggle
-      description: Toggles expression tracking (using camera feedback to match expressions).
+      description: Toggles automatic face expression control
       payload:
         enabled:
           type: boolean
-          description: Target state of expression tracking.
+          description: Target state of expression control.
         user:
           $ref: '#/common_payloads/TelegramUser'
 
